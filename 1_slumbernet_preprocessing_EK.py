@@ -35,9 +35,12 @@ voltage data for EEG and EMG. The data is sampled at 256Hz, and each epoch is 4 
 """
 
 # Set the directory where the EEG data files are located
-basedir = "/home/projects/eeg_deep_learning"
+basedir = "\\storage1.ris.wustl.edu\yaochen\Active\Emily-Senior-Capstone"
 directory = f"{basedir}/eeg_training_data"
 output_directory = f"{basedir}/eeg_data_preprocessed"
+# makes new output directory if it doesn't exist
+if not os.path.exists(output_directory):
+    os.makedirs(output_directory)
 
 # Create two empty lists to store the filenames
 voltage_file_list = []
