@@ -38,7 +38,7 @@ import os
 import csv
 
 # Input directory
-input_directory =  '/home/projects/eeg_deep_learning/eeg_data_preprocessed/'
+input_directory = '/Volumes/yaochen/Active/Emily-Senior-Capstone/EEG_Data_Preprocessed'
 
 # Set the random seed for reproducible results
 seed = 154727

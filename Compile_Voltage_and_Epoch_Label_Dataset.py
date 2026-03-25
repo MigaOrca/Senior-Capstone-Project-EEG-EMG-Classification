@@ -8,9 +8,16 @@ import pandas as pd
 import numpy as np
 import os
 
-# Input directory
-input_dir =  '/home/projects/eeg_deep_learning/eeg_data_raw/' # to be changed
-output_dir = '/home/projects/eeg_deep_learning/eeg_dataset/' # to be changed
+### ---- Compliation of files to form dataset ---- ###
+
+# directories
+input_dir =  '/Volumes/yaochen/Active/Emily-Senior-Capstone/Compilation_Data_Folder'
+output_dir = '/Volumes/yaochen/Active/Emily-Senior-Capstone/EEG_Training_Data'
+
+# makes new output directory if it doesn't exist
+if not os.path.exists(output_dir):
+    os.makedirs(output_dir)
+
 # Create two empty lists to store the filenames
 voltage_file_list = []
 epoch_file_list = []
@@ -24,8 +31,32 @@ for filename in os.listdir(input_dir):
         epoch_file_list.append(filename)
 
 for file_number in range(0,len(voltage_file_list)):
-    current_voltage_file_name = voltage_file_list.loc[file_number, "voltage_file"]
+    current_voltage_file_name = voltage_file_list[file_number]
     voltage_file_name = f'{input_dir}/{current_voltage_file_name}'
     voltages = pd.read_pickle(voltage_file_name)
     desired_voltages = voltages.reindex(columns = ['EMG','EEG Frontal']) # ask Lizze about this
-    # look into how Jha formatted their .txt files
+    
+    # remove .pkl extension
+    voltage_file_name = voltage_file_name.split(".", 1)
+    new_voltage_filename = voltage_file_name[0] + 'txt'
+    
+    # export voltage DataFrame to text file (don't keep header row and index column)
+    path = output_dir + "/" + new_voltage_filename
+    with open(path, 'a') as f:
+        df_string = desired_voltages.to_string(header=False, index=False)
+        f.write(df_string)
+
+for file_number in range(0,len(epoch_file_list)):
+    current_epoch_file_name = epoch_file_list[file_number]
+    epoch_file_name = f'{input_dir}/{current_epoch_file_name}'
+    epochs = pd.read_pickle(epoch_file_name)
+    
+    # remove .pkl extension
+    epoch_file_name = epoch_file_name.split(".", 1)
+    new_epoch_filename = epoch_file_name[0] + '.txt'
+
+    # export epoch DataFrame to text file (don't keep header row and index column)
+    path = output_dir + "/" + new_epoch_filename
+    with open(path, 'a') as f:
+        df_string = epochs.to_string(header=False, index=False)
+        f.write(df_string)

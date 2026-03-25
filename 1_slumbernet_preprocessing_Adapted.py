@@ -35,9 +35,10 @@ voltage data for EEG and EMG. The data is sampled at 256Hz, and each epoch is 4 
 """
 
 # Set the directory where the EEG data files are located
-basedir = "\\storage1.ris.wustl.edu\yaochen\Active\Emily-Senior-Capstone"
-directory = f"{basedir}/eeg_training_data"
-output_directory = f"{basedir}/eeg_data_preprocessed"
+basedir = "/Volumes/yaochen/Active/Emily-Senior-Capstone/"
+directory = f"{basedir}/EEG_Training_Data"
+output_directory = f"{basedir}/EEG_Data_Preprocessed"
+
 # makes new output directory if it doesn't exist
 if not os.path.exists(output_directory):
     os.makedirs(output_directory)
@@ -48,10 +49,10 @@ epoch_file_list = []
 
 # Loop through the files in the directory
 for filename in os.listdir(directory):
-    if filename.endswith("EEGData.pkl"):    # Changed from "256Hz.txt" 2/23/26
+    if filename.endswith("EEGData.txt"):
         # Add the filename to list1
         voltage_file_list.append(filename)
-    elif filename.endswith("SSData.pkl"):       # Changed from "sco.txt" 2/23/26
+    elif filename.endswith("SSData.txt"):
         # Add the filename to list2
         epoch_file_list.append(filename)
 
@@ -61,7 +62,7 @@ file_list = pd.DataFrame(columns=["voltage_file", "epoch_file"])
 # Loop through the values in list1
 for voltage_file in voltage_file_list:
     # Use regular expressions to match the beginning of the filename
-    match = re.match(r"^(.*)_EEGData.pkl", voltage_file)   # Changed from "-256Hz.txt" 2/23/26
+    match = re.match(r"^(.*)_EEGData.txt", voltage_file)   # Changed from "-256Hz.txt" 2/23/26
     if match:
         # Get the matching part of the filename
         stem = match.group(1)
@@ -84,19 +85,13 @@ indexes_to_delete = []
 for file_number in range(0,len(file_list)):
     current_voltage_file_name = file_list.loc[file_number, "voltage_file"]
     voltage_file_name = f'{directory}/{current_voltage_file_name}'
-    voltages = pd.read_pickle(voltage_file_name)      # changed to red pickle .pkl file 2/23/26
+    voltages = pd.read_table(voltage_file_name)
     if voltages.loc[0].str.contains(",").any():      # This is to check that it is a voltage file; if not add to deletes
         indexes_to_delete.append(file_number)
     else:    
-        # voltages = pd.read_table(voltage_file_name, header=None, delimiter='\s+', skiprows=0, 
-        #                         low_memory=False)    # Needed if a column is a string and cannot convert easily
-        # voltages.columns = ["eeg_voltage", "emg_voltage"] 
-        # ^ old code, below = new code. 2/23/26
-        voltages = pd.read_pickle(voltage_file_name, header=None, delimiter='\s+', skiprows=0, 
-                        low_memory=False)
-        voltages.columns = ["eeg_voltage", "emg_voltage"]                      
-        if voltages["eeg_voltage"].dtype != 'float64' or voltages["emg_voltage"].dtype != 'float64':
-            indexes_to_delete.append(file_number)
+        voltages = pd.read_table(voltage_file_name, header=None, delimiter='\s+', skiprows=0, 
+                                low_memory=False)    # Needed if a column is a string and cannot convert easily
+        voltages.columns = ["eeg_voltage", "emg_voltage"] 
 
 file_list = file_list.drop(file_list.index[indexes_to_delete])
 file_list.reset_index(drop=True, inplace=True)       # To make sure indexes are sequential in final data frame
