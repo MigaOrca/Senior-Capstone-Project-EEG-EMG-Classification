@@ -91,7 +91,7 @@ for file_number in range(0,len(file_list)):
     else:    
         voltages = pd.read_table(voltage_file_name, header=None, delimiter='\s+', skiprows=0, 
                                 low_memory=False)    # Needed if a column is a string and cannot convert easily
-        voltages.columns = ["eeg_voltage", "emg_voltage"] 
+        voltages.columns = ["emg_voltage", "eeg_voltage"]
         if voltages["eeg_voltage"].dtype != 'float64' or voltages["emg_voltage"].dtype != 'float64':
             indexes_to_delete.append(file_number)
 
@@ -120,15 +120,16 @@ for file_index in range(0,len(file_list)):
     # Load data from voltages file into a dataframe:
     voltage_file_name = f'{directory}/{current_voltage_file_name}'
     voltages = pd.read_table(voltage_file_name, header=None, delimiter='\s+', skiprows=0)
-    voltages.columns = ["eeg_voltage", "emg_voltage"]
+    voltages.columns = ["emg_voltage", "eeg_voltage"]
 
     # Load data from epochs file with wake (W), REM(R), NREM(N). Anything else (!= WRN) is Artefact (A):
     epoch_file_name = f'{directory}/{file_list.loc[file_index, "epoch_file"]}'
     epochs = pd.read_table(epoch_file_name, header=None, delimiter=',', skiprows=19)
     if epochs.loc[0].str.contains("\t").any():
         epochs = pd.read_table(epoch_file_name, header=None, delimiter='\t', skiprows=19)
-    epochs.columns = ["datetime", "epoch_num", "sleep_stage", "n", "blank"]
-    epochs = epochs.drop(columns = ["n", "blank"])
+    epochs.columns = ["sleep_stage", "datetime"]
+    # epochs.columns = ["datetime", "epoch_num", "sleep_stage", "n", "blank"]
+    # epochs = epochs.drop(columns = ["n", "blank"])
 
     # Extract voltage data for each epoch and matching sleep_stage:
     voltage_array = np.zeros((1,2,samples_per_epoch))    # Reset arrays for each file iteration
@@ -236,7 +237,7 @@ def pre_process_emg(sample_index, method="resample"):
 
     # Butterworth low pass filter
     cutoff = 16         # Set the cutoff frequency for the filter (in Hz)
-    sample_rate = 256   # Set the sample rate for the data (in Hz)
+    sample_rate = 400   # Set the sample rate for the data (in Hz)
     order = 4           # Set the order of the Butterworth filter
     b, a = signal.butter(order, cutoff / (sample_rate / 2), 'low')  # Create the Butterworth filter
     filtered_data = signal.lfilter(b, a, orig_data)                 # Apply the filter 
