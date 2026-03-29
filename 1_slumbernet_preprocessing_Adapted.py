@@ -92,6 +92,8 @@ for file_number in range(0,len(file_list)):
         voltages = pd.read_table(voltage_file_name, header=None, delimiter='\s+', skiprows=0, 
                                 low_memory=False)    # Needed if a column is a string and cannot convert easily
         voltages.columns = ["eeg_voltage", "emg_voltage"] 
+        if voltages["eeg_voltage"].dtype != 'float64' or voltages["emg_voltage"].dtype != 'float64':
+            indexes_to_delete.append(file_number)
 
 file_list = file_list.drop(file_list.index[indexes_to_delete])
 file_list.reset_index(drop=True, inplace=True)       # To make sure indexes are sequential in final data frame
