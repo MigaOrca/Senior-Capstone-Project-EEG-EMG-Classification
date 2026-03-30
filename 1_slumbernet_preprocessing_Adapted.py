@@ -243,7 +243,7 @@ def pre_process_emg(sample_index, method="resample"):
     filtered_data = signal.lfilter(b, a, orig_data)                 # Apply the filter 
 
     # Downsample data
-    down_sample_ratio = 4        # Downsample by 4 (1024 -> 256 datapoints / epoch)
+    down_sample_ratio = 4        # Downsample by 4 (1024 -> 256 datapoints / epoch); may need to be changed
     original_num_samples = filtered_data.shape[0]
     desired_num_samples = filtered_data.shape[0] // down_sample_ratio
 
