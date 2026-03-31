@@ -5,7 +5,6 @@
 
 ### ---- Load libraries ---- ###
 import pandas as pd
-import numpy as np
 import os
 
 ### ---- Compliation of files to form dataset ---- ###
@@ -40,14 +39,10 @@ for file_number in range(0,len(voltage_file_list)):
     # rename columns in voltage DataFrame to match SlumberNet Names
     desired_voltages.rename(columns={'EMG': 'emg_voltage', 'EEG (Frontal Channel)': 'eeg_voltage'}, inplace=True)
     # remove .pkl extension
-    voltage_file_name = voltage_file_name.split(".", 1)
-    new_voltage_filename = voltage_file_name[0] + '.txt'
-    
-    # export voltage DataFrame to text file (doesn't keep header row and index column; change to true if want to keep)
-    path = output_dir + "/" + new_voltage_filename
-    with open(path, 'a') as f:
-        df_string = desired_voltages.to_string(header=False, index=False)
-        f.write(df_string)
+    new_voltage_file_name = current_voltage_file_name.split(".", 1)
+     # export voltage DataFrame to text file while keeping column format (doesn't keep  index column but keeps header; change to true if want to keep)
+    voltage_pathname = os.path.join(output_dir, new_voltage_file_name[0] + '.txt')
+    desired_voltages.to_csv(voltage_pathname, sep='\t', index=False)
 
 for file_number in range(0,len(epoch_file_list)):
     current_epoch_file_name = epoch_file_list[file_number]
@@ -57,15 +52,11 @@ for file_number in range(0,len(epoch_file_list)):
     # rename columns in epoch DataFrame to match SlumberNet Names
     epochs.rename(columns={'Sleep States': 'sleep_stage', 'Sleep States Time (s)': 'datetime'}, inplace=True)
     # Replacing labels of 1, 2, 3 (1 = Wake, 2 = NREM, 3 = REM) to match SlubmerNet's labels: Wake(W), NREM(N), REM(R)
-    epochs.replace(1.0, 'W')
-    epochs.replace(2.0, 'N')
-    epochs.replace(3.0, 'R')
+    epochs.replace(1.0, 'W', inplace = True)
+    epochs.replace(2.0, 'N', inplace = True)
+    epochs.replace(3.0, 'R', inplace = True)
     # remove .pkl extension
-    epoch_file_name = epoch_file_name.split(".", 1)
-    new_epoch_filename = epoch_file_name[0] + '.txt'
-
-    # export epoch DataFrame to text file (doesn't keep header row and index column; change to true if want to keep)
-    path = output_dir + "/" + new_epoch_filename
-    with open(path, 'a') as f:
-        df_string = epochs.to_string(header=False, index=False)
-        f.write(df_string)
+    new_epoch_filename = current_epoch_file_name.split(".", 1)
+    # export epoch DataFrame to text file while keeping column format (doesn't keep  index column but keeps header; change to true if want to keep)
+    epoch_pathname = os.path.join(output_dir, new_epoch_filename[0] + '.txt')
+    epochs.to_csv(epoch_pathname, sep='\t', index=False)
