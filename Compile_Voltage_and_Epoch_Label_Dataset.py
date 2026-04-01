@@ -1,6 +1,6 @@
 # This Python script converts *_EEGData.pkl into usable inputs for 1_slumbernet_preprocessing_Adapted
 # Extracts the first two columns of *_EEGData.pkl which are the Column 1: "EMG" and Column 2: "EEG (Frontal Channel)"
-
+# Each file pair takes ~1 min
 # Requires all files to be used in dataset to be compiled into one folder
 
 ### ---- Load libraries ---- ###
@@ -8,7 +8,6 @@ import pandas as pd
 import os
 
 ### ---- Compliation of files to form dataset ---- ###
-
 # directories
 input_dir =  '/storage1/fs1/yaochen/Active/Emily-Senior-Capstone/Compilation_Data_Folder'
 output_dir = '/storage1/fs1/yaochen/Active/Emily-Senior-Capstone/EEG_Training_Data'
@@ -17,18 +16,11 @@ output_dir = '/storage1/fs1/yaochen/Active/Emily-Senior-Capstone/EEG_Training_Da
 if not os.path.exists(output_dir):
     os.makedirs(output_dir)
 
-# Create two empty lists to store the filenames
-voltage_file_list = []
-epoch_file_list = []
+# Creates two lists to store the voltage and epoch filenames respectively
+voltage_file_list = [filename for filename in os.listdir(input_dir) if filename.endswith("EEGData.pkl")]
+epoch_file_list = [filename for filename in os.listdir(input_dir) if filename.endswith("SSData.pkl")]
 
-for filename in os.listdir(input_dir):
-    if filename.endswith("EEGData.pkl"):
-        # Add the filename to list1
-        voltage_file_list.append(filename)
-    elif filename.endswith("SSData.pkl"):
-        # Add the filename to list2
-        epoch_file_list.append(filename)
-
+### ---- Voltage file processing ---- ###
 for file_number in range(0,len(voltage_file_list)):
     current_voltage_file_name = voltage_file_list[file_number]
     voltage_file_name = f'{input_dir}/{current_voltage_file_name}'
@@ -44,6 +36,7 @@ for file_number in range(0,len(voltage_file_list)):
     voltage_pathname = os.path.join(output_dir, new_voltage_file_name[0] + '.txt')
     desired_voltages.to_csv(voltage_pathname, sep='\t', index=False)
 
+### ---- Epoch file processing ---- ###
 for file_number in range(0,len(epoch_file_list)):
     current_epoch_file_name = epoch_file_list[file_number]
     epoch_file_name = f'{input_dir}/{current_epoch_file_name}'

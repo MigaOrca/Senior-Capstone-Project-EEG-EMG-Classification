@@ -43,18 +43,9 @@ output_directory = f"{basedir}/EEG_Data_Preprocessed"
 if not os.path.exists(output_directory):
     os.makedirs(output_directory)
 
-# Create two empty lists to store the filenames
-voltage_file_list = []
-epoch_file_list = []
-
-# Loop through the files in the directory
-for filename in os.listdir(directory):
-    if filename.endswith("EEGData.txt"):
-        # Add the filename to list1
-        voltage_file_list.append(filename)
-    elif filename.endswith("SSData.txt"):
-        # Add the filename to list2
-        epoch_file_list.append(filename)
+# Creates two lists to store the voltage and epoch filenames respectively
+voltage_file_list = [filename for filename in os.listdir(directory) if filename.endswith("EEGData.txt")]
+epoch_file_list = [filename for filename in os.listdir(directory) if filename.endswith("SSData.txt")]
 
 # Create a Pandas dataframe with two columns
 file_list = pd.DataFrame(columns=["voltage_file", "epoch_file"])
