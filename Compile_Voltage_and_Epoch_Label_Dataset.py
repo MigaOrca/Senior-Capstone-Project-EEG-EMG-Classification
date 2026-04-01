@@ -10,8 +10,8 @@ import os
 ### ---- Compliation of files to form dataset ---- ###
 
 # directories
-input_dir =  '/Volumes/yaochen/Active/Emily-Senior-Capstone/Compilation_Data_Folder'
-output_dir = '/Volumes/yaochen/Active/Emily-Senior-Capstone/EEG_Training_Data'
+input_dir =  '/storage1/fs1/yaochen/Active/Emily-Senior-Capstone/Compilation_Data_Folder'
+output_dir = '/storage1/fs1/yaochen/Active/Emily-Senior-Capstone/EEG_Training_Data'
 
 # makes new output directory if it doesn't exist
 if not os.path.exists(output_dir):
