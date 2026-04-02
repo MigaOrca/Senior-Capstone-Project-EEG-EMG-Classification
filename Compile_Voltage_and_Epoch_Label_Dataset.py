@@ -1,6 +1,6 @@
 # This Python script converts *_EEGData.pkl into usable inputs for 1_slumbernet_preprocessing_Adapted
 # Extracts the first two columns of *_EEGData.pkl which are the Column 1: "EMG" and Column 2: "EEG (Frontal Channel)"
-# Each file pair takes ~1 min
+# Each EEG file pair takes ~1 min/GB
 # Requires all files to be used in dataset to be compiled into one folder
 
 ### ---- Load libraries ---- ###

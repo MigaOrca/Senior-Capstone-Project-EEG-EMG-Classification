@@ -61,7 +61,7 @@ optimizer_name = keras.optimizers.legacy.Adam(learning_rate)                # Th
 optimizer = keras.mixed_precision.LossScaleOptimizer(optimizer_name)        # Wrapping the optimizer avoid crashes on multiple GPUs
 
 # Define ResNet2D model function and parameters
-input_shape = (400,2,1)     # *changed from (256,2,1) 2/21/26
+input_shape = (400,2,1)     # *changed from (256,2,1) 2/21/26 EK
 nb_classes = 3              # Number of classes (W, N, R)   
 
 n_resnet_blocks = 7
@@ -145,7 +145,7 @@ X = np.load(input_directory + "eeg_input_array.npy")
 y = np.load(input_directory + "epoch_input_array.npy")
 
 # Reshape array for Conv2D shape(400,2) 
-X = X.reshape(-1,400,2)         # *changed from (-1,256,2) 2/21/26
+X = X.reshape(-1,400,2)         # *changed from (-1,256,2) 2/21/26 EK
 X = X.astype('float32')         # Make float32 for tensorflow data augmentation calculations (default is float32)
 
 # Data generator with augmentation if specified
