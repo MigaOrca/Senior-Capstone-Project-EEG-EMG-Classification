@@ -7,6 +7,4 @@ ARG PYTHON_VERSION=python3.12
 COPY model.requirements.txt /model.requirements.txt
 # Install the application dependencies
 RUN pip install --no-cache-dir -r /model.requirements.txt -U
-COPY \
-    2_slumbernet_k-fold_Adapted.py
-    3_slumbernet_full_training_Adapted.py /
+COPY 2_slumbernet_k-fold_Adapted.py 3_slumbernet_full_training_Adapted.py /
