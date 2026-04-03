@@ -70,7 +70,7 @@ optimizer_name = keras.optimizers.legacy.Adam(learning_rate)
 optimizer = keras.mixed_precision.LossScaleOptimizer(optimizer_name)        
 
 # Define ResNet2D model function and parameters
-input_shape = (256,2,1)     # *changed from (256,2,1) 2/21/26 EK
+input_shape = (400,2,1)     # *changed from (256,2,1) 2/21/26 EK
 nb_classes = 3              # Number of classes (W, N, R)   
 
 n_resnet_blocks = 7

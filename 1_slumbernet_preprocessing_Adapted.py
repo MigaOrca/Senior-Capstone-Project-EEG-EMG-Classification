@@ -83,7 +83,7 @@ for file_number in range(0,len(file_list)):
     #     voltages = pd.read_table(voltage_file_name, header=None, delimiter='\s+', skiprows=0, 
     #                             low_memory=False)    # Needed if a column is a string and cannot convert easily
     #     voltages.columns = ["emg_voltage", "eeg_voltage"]
-    voltages = pd.read_table(voltage_file_name, header=0, delimiter='\s+', skiprows=0)
+    voltages = pd.read_table(voltage_file_name, header=0, skiprows=0)
     voltages.columns = ["emg_voltage", "eeg_voltage"]
     if voltages["eeg_voltage"].dtype != 'float64' or voltages["emg_voltage"].dtype != 'float64':
         indexes_to_delete.append(file_number)
@@ -112,7 +112,7 @@ for file_index in range(0,len(file_list)):
 
     # Load data from voltages file into a dataframe:
     voltage_file_name = f'{directory}/{current_voltage_file_name}'
-    voltages = pd.read_table(voltage_file_name, header=0, delimiter='\s+', skiprows=0)
+    voltages = pd.read_table(voltage_file_name, header=0, skiprows=0)
     voltages.columns = ["emg_voltage", "eeg_voltage"]
 
     # Load data from epochs file with wake (W), REM(R), NREM(N). Anything else (!= WRN) is Artefact (A):
