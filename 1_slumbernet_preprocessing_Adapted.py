@@ -28,10 +28,10 @@ from datetime import datetime
 
 ### ---- Pre-process multiple files ---- ###
 """
-Files are in pairs. One file (-256Hz_sco.txt) contains the epoch labels, which were
+Files are in pairs. One file (_EEGData.txt) contains the epoch labels, which were
 scored manually. These are either wake (W), non-REM sleep (N), or REM sleep (R), while
-other labels are ignored by the model. The second file (-256Hz.txt) contains the raw
-voltage data for EEG and EMG. The data is sampled at 256Hz, and each epoch is 4 seconds
+other labels are ignored by the model. The second file (_SSData.txt) contains the raw
+voltage data for EEG and EMG. The data is sampled at 400Hz, and each epoch is 4 seconds
 """
 
 # Set the directory where the EEG data files are located
@@ -53,7 +53,7 @@ file_list = pd.DataFrame(columns=["voltage_file", "epoch_file"])
 # Loop through the values in list1
 for voltage_file in voltage_file_list:
     # Use regular expressions to match the beginning of the filename
-    match = re.match(r"^(.*)_EEGData.txt", voltage_file)   # Changed from "-256Hz.txt" 2/23/26
+    match = re.match(r"^(.*)_EEGData.txt", voltage_file)   # Changed from "-256Hz.txt" 2/23/26 EK
     if match:
         # Get the matching part of the filename
         stem = match.group(1)
@@ -76,15 +76,17 @@ indexes_to_delete = []
 for file_number in range(0,len(file_list)):
     current_voltage_file_name = file_list.loc[file_number, "voltage_file"]
     voltage_file_name = f'{directory}/{current_voltage_file_name}'
-    voltages = pd.read_table(voltage_file_name)
-    if voltages.loc[0].str.contains(",").any():      # This is to check that it is a voltage file; if not add to deletes
+    # P.S. I have no idea what this is checking for, nor does it hold any meaning since data is already checked before processing in compile EK
+    # if voltages.loc[0].str.contains(",").any():      # This is to check that it is a voltage file; if not add to deletes
+    #     indexes_to_delete.append(file_number)
+    # else:    
+    #     voltages = pd.read_table(voltage_file_name, header=None, delimiter='\s+', skiprows=0, 
+    #                             low_memory=False)    # Needed if a column is a string and cannot convert easily
+    #     voltages.columns = ["emg_voltage", "eeg_voltage"]
+    voltages = pd.read_table(voltage_file_name, header=0, delimiter='\s+', skiprows=0)
+    voltages.columns = ["emg_voltage", "eeg_voltage"]
+    if voltages["eeg_voltage"].dtype != 'float64' or voltages["emg_voltage"].dtype != 'float64':
         indexes_to_delete.append(file_number)
-    else:    
-        voltages = pd.read_table(voltage_file_name, header=None, delimiter='\s+', skiprows=0, 
-                                low_memory=False)    # Needed if a column is a string and cannot convert easily
-        voltages.columns = ["emg_voltage", "eeg_voltage"]
-        if voltages["eeg_voltage"].dtype != 'float64' or voltages["emg_voltage"].dtype != 'float64':
-            indexes_to_delete.append(file_number)
 
 file_list = file_list.drop(file_list.index[indexes_to_delete])
 file_list.reset_index(drop=True, inplace=True)       # To make sure indexes are sequential in final data frame
@@ -92,7 +94,7 @@ file_list.reset_index(drop=True, inplace=True)       # To make sure indexes are 
 ### ---- Pre-process the data for input into Keras/Tensorflow model ---- ###
 # Takes about 1.5 mins per file pair
 
-number_of_samples_per_second = 400          # 256Hz sampling rate - changed to 400 Hz
+number_of_samples_per_second = 400          # 256Hz sampling rate - changed to 400 Hz EK
 number_seconds_per_epoch = 4                # 4 second epochs - change if different
 samples_per_epoch = number_of_samples_per_second * number_seconds_per_epoch
 
@@ -110,14 +112,14 @@ for file_index in range(0,len(file_list)):
 
     # Load data from voltages file into a dataframe:
     voltage_file_name = f'{directory}/{current_voltage_file_name}'
-    voltages = pd.read_table(voltage_file_name, header=None, delimiter='\s+', skiprows=0)
+    voltages = pd.read_table(voltage_file_name, header=0, delimiter='\s+', skiprows=0)
     voltages.columns = ["emg_voltage", "eeg_voltage"]
 
     # Load data from epochs file with wake (W), REM(R), NREM(N). Anything else (!= WRN) is Artefact (A):
     epoch_file_name = f'{directory}/{file_list.loc[file_index, "epoch_file"]}'
-    epochs = pd.read_table(epoch_file_name, header=None, delimiter=',', skiprows=19)
+    epochs = pd.read_table(epoch_file_name, header=0, delimiter=',', skiprows=19)
     if epochs.loc[0].str.contains("\t").any():
-        epochs = pd.read_table(epoch_file_name, header=None, delimiter='\t', skiprows=19)
+        epochs = pd.read_table(epoch_file_name, header=0, delimiter='\t', skiprows=19)
     epochs.columns = ["sleep_stage", "datetime"]
     # epochs.columns = ["datetime", "epoch_num", "sleep_stage", "n", "blank"]
     # epochs = epochs.drop(columns = ["n", "blank"])
@@ -203,7 +205,7 @@ np.save(f"{output_directory}/eeg_epoch_data_no_scaling.npy", master_epoch_array)
 # Apply downsampling to EEG data and baseline subtract (in case of baseline shift; more a problem with EMG)
 def pre_process_eeg(sample_index, method="resample"):
     # Downsample data
-    down_sample_ratio = 4        # Downsample by 4 (1024 -> 256 datapoints / epoch)
+    down_sample_ratio = 4        # Downsample by 4 (1600 -> 400 datapoints / epoch)
     original_num_samples = master_voltage_array[sample_index,0].shape[0]
     desired_num_samples = master_voltage_array[sample_index,0].shape[0] // down_sample_ratio
 
@@ -234,7 +236,7 @@ def pre_process_emg(sample_index, method="resample"):
     filtered_data = signal.lfilter(b, a, orig_data)                 # Apply the filter 
 
     # Downsample data
-    down_sample_ratio = 4        # Downsample by 4 (1024 -> 256 datapoints / epoch); may need to be changed
+    down_sample_ratio = 4        # Downsample by 4 (1600 -> 400 datapoints / epoch)
     original_num_samples = filtered_data.shape[0]
     desired_num_samples = filtered_data.shape[0] // down_sample_ratio
 
