@@ -150,7 +150,7 @@ parameters_df = pd.DataFrame(parameters, index=[0])
 parameters_df.to_csv(output_directory + 'run_parameters.csv', index=False)
 
 # Initialize metrics
-precisions, recalls, f1_scores, supports = [], [], [], []
+precisions, recalls, f1_scores, supports, specificities = [], [], [], [], [] # positive recall = sensitivity = recalls
 accuracies, kappas, loss, explained_variances, confusion_matrices = [], [], [], [], []
 
 # Data and labels
@@ -287,6 +287,15 @@ for train_index, test_index in sss.split(X,y):
     loss.append(log_loss(y_test_one_hot, y_pred_one_hot))
     explained_variances.append(explained_variance_score(y_test, y_pred))
 
+    # calculating specificity manually
+    for j in range(nb_classes):
+        TP = conf_matrix[j, j]
+        FP = conf_matrix[:, j].sum() - TP
+        FN = conf_matrix[j, :].sum() - TP
+        TN = conf_matrix.sum() - (TP + FP + FN)
+        specificity = TN / (TN + FP) if (TN + FP) > 0 else 0.0
+        specificities.append(specificity)
+
     # Plot confusion matrix
     plt.figure(figsize=(10,7))
     sns.heatmap(conf_matrix,annot=True,cmap="YlGnBu",fmt='g')
@@ -333,7 +342,8 @@ metrics = {
     'Accuracy': accuracies,
     'Cohen_Kappa': kappas,
     'Log_Loss': loss,
-    'Explained_Variance': explained_variances
+    'Explained_Variance': explained_variances,
+    'Specificity': specificities
 }
 
 metrics_results_df = pd.DataFrame(metrics)

@@ -35,7 +35,7 @@ voltage data for EEG and EMG. The data is sampled at 400Hz, and each epoch is 4 
 """
 
 # Set the directory where the EEG data files are located
-basedir = "/storage1/fs1/yaochen/Active/Emily-Senior-Capstone/"
+basedir = "/storage1/fs1/yaochen/Active/Emily-Senior-Capstone"
 directory = f"{basedir}/EEG_Training_Data"
 output_directory = f"{basedir}/EEG_Data_Preprocessed"
 
