@@ -65,7 +65,7 @@ batch_size_per_gpu = 128
 batch_size = batch_size_per_gpu * number_of_gpus_available
 
 # This is to pull out the correct name label for the optimizer (if we need for metadata)
-optimizer_name = keras.optimizers.legacy.Adam(learning_rate)
+optimizer_name = keras.optimizers.Adam(learning_rate)
 # Wrapping the optimizer avoid crashes on multiple GPUs:               
 optimizer = keras.mixed_precision.LossScaleOptimizer(optimizer_name)        
 
