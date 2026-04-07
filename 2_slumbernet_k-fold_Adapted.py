@@ -45,7 +45,7 @@ seed = 154727
 np.random.seed(seed)
 
 # Use multiple GPUs if available - this will use all available GPUs
-strategy = tf.distribute.MirroredStrategy()
+strategy = tf.distribute.MirroredStrategy(devices=["/gpu:0", "/gpu:1", "/gpu:2"])
 number_of_gpus_available = strategy.num_replicas_in_sync
 
 # Use mixed precision compute on GPU (float16 and float32) for higher speed training on compute 6.0+ Nvidia GPUs
