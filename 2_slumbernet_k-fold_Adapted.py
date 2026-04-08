@@ -45,8 +45,9 @@ seed = 154727
 np.random.seed(seed)
 
 # Use multiple GPUs if available - this will use all available GPUs
-strategy = tf.distribute.MirroredStrategy(devices=["/gpu:0", "/gpu:1", "/gpu:2"])
+strategy = tf.distribute.MirroredStrategy()
 number_of_gpus_available = strategy.num_replicas_in_sync
+print('Number of Devices: {}'.format(strategy.num_replicas_in_sync))
 
 # Use mixed precision compute on GPU (float16 and float32) for higher speed training on compute 6.0+ Nvidia GPUs
 # https://www.tensorflow.org/guide/mixed_precision
@@ -216,6 +217,10 @@ for train_index, test_index in sss.split(X,y):
         output_layer = keras.layers.Dense(nb_classes, activation='softmax')(gap_layer)
 
         model = keras.models.Model(inputs=input_layer, outputs=output_layer)
+        # This is to pull out the correct name label for the optimizer (if we need for metadata)
+        optimizer_name = keras.optimizers.Adam(learning_rate)
+#       Wrapping the optimizer avoid crashes on multiple GPUs:               
+        optimizer = keras.mixed_precision.LossScaleOptimizer(optimizer_name)  
 
     # Compile the model on the strategy scope (multi-GPU)
     with strategy.scope():
