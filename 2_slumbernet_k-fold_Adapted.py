@@ -219,14 +219,17 @@ for train_index, test_index in sss.split(X,y):
         model = keras.models.Model(inputs=input_layer, outputs=output_layer)
         # This is to pull out the correct name label for the optimizer (if we need for metadata)
         optimizer_name = keras.optimizers.Adam(learning_rate)
-#       Wrapping the optimizer avoid crashes on multiple GPUs:               
+        # Wrapping the optimizer avoid crashes on multiple GPUs:               
         optimizer = keras.mixed_precision.LossScaleOptimizer(optimizer_name)  
-
-    # Compile the model on the strategy scope (multi-GPU)
-    with strategy.scope():
         model.compile(loss='categorical_crossentropy', 
                     optimizer=optimizer,
                     metrics=['accuracy'])
+
+    # Compile the model on the strategy scope (multi-GPU)
+    # with strategy.scope():
+    #     model.compile(loss='categorical_crossentropy', 
+    #                 optimizer=optimizer,
+    #                 metrics=['accuracy'])
 
     # Split the data into train and test sets using the indexes from the k-fold split
     X_train, X_test = X[train_index], X[test_index]
@@ -360,4 +363,3 @@ for i, matrix in enumerate(confusion_matrices):
         writer = csv.writer(csv_file)
         for row in matrix:
             writer.writerow(row)
-
