@@ -23,18 +23,19 @@
 # environments to install tensorflow-gpu and its dependencies.
 
 
-### ---- Load libraries ---- ###
+### ---- Load libraries and set up enviroment variables ---- ###
+import os
+os.environ["TF_USE_LEGACY_KERAS"] = "1"
 import numpy as np
 import pandas as pd
 from sklearn.model_selection import StratifiedShuffleSplit
 from sklearn.metrics import precision_recall_fscore_support, accuracy_score, confusion_matrix
 from sklearn.metrics import cohen_kappa_score, explained_variance_score, log_loss
 import tensorflow as tf
-import tensorflow.keras as keras
-from keras.callbacks import ModelCheckpoint
+import tf_keras as keras
+from tf_keras.callbacks import ModelCheckpoint
 import matplotlib.pyplot as plt
 import seaborn as sns
-import os
 import csv
 
 # Input directory
@@ -186,8 +187,8 @@ class AugmentDataGenerator():
         dataset = tf.data.Dataset.from_tensor_slices((self.x_set, self.y_set))
         if self.is_training:
             dataset = dataset.map(self.augment, num_parallel_calls=tf.data.AUTOTUNE)
-        dataset = dataset.batch(self.batch_size)
         dataset = dataset.cache()
+        dataset = dataset.batch(self.batch_size)
         dataset = dataset.prefetch(tf.data.AUTOTUNE)
         return dataset
 
@@ -265,6 +266,8 @@ for train_index, test_index in sss.split(X,y):
 
     # Load the best model for predictions       
     model = keras.models.load_model(best_model_filepath)
+    # Check TensorFlow version
+    print(tf.__version__)
 
     # Make predictions on the test set (using multi-GPU)
     with strategy.scope():

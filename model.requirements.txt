@@ -2,6 +2,7 @@ numpy
 pandas 
 scipy 
 scikit-learn 
-tensorflow[and-cuda] 
+tensorflow[and-cuda]
+tf_keras
 seaborn 
 matplotlib
