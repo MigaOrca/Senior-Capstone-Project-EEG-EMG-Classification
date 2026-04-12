@@ -29,7 +29,7 @@ os.environ["TF_USE_LEGACY_KERAS"] = "1"
 import numpy as np
 import pandas as pd
 from sklearn.model_selection import StratifiedShuffleSplit
-from sklearn.metrics import precision_recall_fscore_support, accuracy_score, confusion_matrix
+from sklearn.metrics import precision_recall_fscore_support, accuracy_score, confusion_matrix, classification_report
 from sklearn.metrics import cohen_kappa_score, explained_variance_score, log_loss
 import tensorflow as tf
 import tf_keras as keras
@@ -67,7 +67,7 @@ batch_size_per_gpu = 128
 batch_size = batch_size_per_gpu * number_of_gpus_available
 
 # This is to pull out the correct name label for the optimizer (if we need for metadata)
-optimizer_name = keras.optimizers.Adam(learning_rate)
+optimizer_name = keras.optimizers.legacy.Adam(learning_rate)
 # Wrapping the optimizer avoid crashes on multiple GPUs:               
 optimizer = keras.mixed_precision.LossScaleOptimizer(optimizer_name)        
 
@@ -218,19 +218,12 @@ for train_index, test_index in sss.split(X,y):
         output_layer = keras.layers.Dense(nb_classes, activation='softmax')(gap_layer)
 
         model = keras.models.Model(inputs=input_layer, outputs=output_layer)
-        # This is to pull out the correct name label for the optimizer (if we need for metadata)
-        optimizer_name = keras.optimizers.Adam(learning_rate)
-        # Wrapping the optimizer avoid crashes on multiple GPUs:               
-        optimizer = keras.mixed_precision.LossScaleOptimizer(optimizer_name)  
+
+    # Compile the model on the strategy scope (multi-GPU)
+    with strategy.scope():
         model.compile(loss='categorical_crossentropy', 
                     optimizer=optimizer,
                     metrics=['accuracy'])
-
-    # Compile the model on the strategy scope (multi-GPU)
-    # with strategy.scope():
-    #     model.compile(loss='categorical_crossentropy', 
-    #                 optimizer=optimizer,
-    #                 metrics=['accuracy'])
 
     # Split the data into train and test sets using the indexes from the k-fold split
     X_train, X_test = X[train_index], X[test_index]
@@ -245,8 +238,8 @@ for train_index, test_index in sss.split(X,y):
     test_dataset = test_generator.create_dataset()
 
     # Create a callback function to save the best model and set up learning rate reduction
-    best_model_filepath = output_directory + "fold_" + str(fold_num) + "_model_best.h5"
-    checkpoint = ModelCheckpoint(best_model_filepath, monitor='val_accuracy', save_best_only=True, mode='max', save_weights_only=False)
+    best_model_filepath = output_directory + "fold_" + str(fold_num) + "_model_best.keras"
+    checkpoint = ModelCheckpoint(filepath=best_model_filepath, monitor='val_accuracy', save_best_only=True, mode='max', save_weights_only=False)
     reduce_lr = keras.callbacks.ReduceLROnPlateau(monitor='loss', factor=0.5, patience=3, min_lr=1e-07)
     callbacks_list = [reduce_lr, checkpoint]
 
@@ -258,7 +251,7 @@ for train_index, test_index in sss.split(X,y):
                             epochs=num_epochs)                        
 
     # Save last model
-    model.save(output_directory + "fold_" + str(fold_num) + "_model_last.h5")
+    model.save(output_directory + "fold_" + str(fold_num) + "_model_last.keras")
 
     # Save training and validation accuracy and losses for each epoch
     history_df = pd.DataFrame(history.history)
@@ -268,6 +261,7 @@ for train_index, test_index in sss.split(X,y):
     model = keras.models.load_model(best_model_filepath)
     # Check TensorFlow version
     print(tf.__version__)
+    print(model.optimizer.get_weights())
 
     # Make predictions on the test set (using multi-GPU)
     with strategy.scope():
@@ -285,7 +279,7 @@ for train_index, test_index in sss.split(X,y):
     y_test_one_hot = np.eye(y_test_raw.shape[1])[np.argmax(y_test_raw, axis=1)].copy()
     y_pred_one_hot = np.eye(y_pred_raw.shape[1])[np.argmax(y_pred_raw, axis=1)].copy()
 
-    # Calculate various metrics
+    # Calculate various metrics (averaged)
     precision, recall, f1_score, support = precision_recall_fscore_support(y_test, y_pred, average='weighted')
     precisions.append(precision)
     recalls.append(recall)
@@ -299,13 +293,24 @@ for train_index, test_index in sss.split(X,y):
     explained_variances.append(explained_variance_score(y_test, y_pred))
 
     # calculating specificity manually
+    specificities_per_fold = []
     for j in range(nb_classes):
         TP = conf_matrix[j, j]
         FP = conf_matrix[:, j].sum() - TP
         FN = conf_matrix[j, :].sum() - TP
         TN = conf_matrix.sum() - (TP + FP + FN)
         specificity = TN / (TN + FP) if (TN + FP) > 0 else 0.0
-        specificities.append(specificity)
+        specificities_per_fold.append(specificity)
+    avg_specificity = np.mean(specificities_per_fold)
+    specificities.append(avg_specificity)
+
+    # Create dictionary of various metrics per sleep state
+    results = classification_report(y_test, y_pred, labels=['Wake','NREM','REM'], output_dict=True)
+    for (label, metrics), specificity_per_fold in zip(results.items(), specificities_per_fold):
+        metrics['specificity'] = specificity_per_fold
+    # Save dictionary (results) to csv
+    report = pd.DataFrame.from_dict(results, orient='index')
+    report.to_csv(output_directory + 'fold_{}_metrics_per_sleep_state.csv'.format(fold_num))
 
     # Plot confusion matrix
     plt.figure(figsize=(10,7))
@@ -356,6 +361,7 @@ metrics = {
     'Explained_Variance': explained_variances,
     'Specificity': specificities
 }
+print(specificities)
 
 metrics_results_df = pd.DataFrame(metrics)
 metrics_results_df.to_csv(output_directory + 'kfold_metrics.csv', index=False)
