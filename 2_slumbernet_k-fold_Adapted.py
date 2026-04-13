@@ -238,7 +238,7 @@ for train_index, test_index in sss.split(X,y):
     test_dataset = test_generator.create_dataset()
 
     # Create a callback function to save the best model and set up learning rate reduction
-    best_model_filepath = output_directory + "fold_" + str(fold_num) + "_model_best.keras"
+    best_model_filepath = output_directory + "fold_" + str(fold_num) + "_model_best.tf"
     checkpoint = ModelCheckpoint(filepath=best_model_filepath, monitor='val_accuracy', save_best_only=True, mode='max', save_weights_only=False)
     reduce_lr = keras.callbacks.ReduceLROnPlateau(monitor='loss', factor=0.5, patience=3, min_lr=1e-07)
     callbacks_list = [reduce_lr, checkpoint]
@@ -251,15 +251,15 @@ for train_index, test_index in sss.split(X,y):
                             epochs=num_epochs)                        
 
     # Save last model
-    model.save(output_directory + "fold_" + str(fold_num) + "_model_last.keras")
+    model.save(output_directory + "fold_" + str(fold_num) + "_model_last.tf")
 
     # Save training and validation accuracy and losses for each epoch
     history_df = pd.DataFrame(history.history)
     history_df.to_csv(output_directory + 'fold_{}_history.csv'.format(fold_num), index=False)
 
     # Load the best model for predictions       
-    model = keras.models.load_model(best_model_filepath)
-    # Check TensorFlow version
+    model = keras.models.load_model(best_model_filepath, compile = False)
+    # Below lines are for debugging
     print(tf.__version__)
     print(model.optimizer.get_weights())
 
@@ -305,10 +305,11 @@ for train_index, test_index in sss.split(X,y):
     specificities.append(avg_specificity)
 
     # Create dictionary of various metrics per sleep state
-    results = classification_report(y_test, y_pred, labels=['Wake','NREM','REM'], output_dict=True)
+    results = classification_report(y_test, y_pred, labels=['0','1','2',], output_dict=True)
     for (label, metrics), specificity_per_fold in zip(results.items(), specificities_per_fold):
-        metrics['specificity'] = specificity_per_fold
+        metrics['specificity'] = specificity_per_fold.item() # convert to normal Python float type
     # Save dictionary (results) to csv
+    print(results)
     report = pd.DataFrame.from_dict(results, orient='index')
     report.to_csv(output_directory + 'fold_{}_metrics_per_sleep_state.csv'.format(fold_num))
 
