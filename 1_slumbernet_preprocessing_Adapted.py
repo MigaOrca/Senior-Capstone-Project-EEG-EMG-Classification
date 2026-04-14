@@ -97,7 +97,7 @@ file_list.reset_index(drop=True, inplace=True)       # To make sure indexes are 
 number_of_samples_per_second = 400          # 256Hz sampling rate - changed to 400 Hz EK
 number_seconds_per_epoch = 4                # 4 second epochs - change if different
 samples_per_epoch = number_of_samples_per_second * number_seconds_per_epoch
-
+orig_counts = []
 for file_index in range(0,len(file_list)):
 
     # Output which file is being worked on and datetime at start
@@ -121,6 +121,7 @@ for file_index in range(0,len(file_list)):
     if epochs.loc[0].str.contains("\t").any():
         epochs = pd.read_table(epoch_file_name, header=0, delimiter='\t', skiprows=19)
     epochs.columns = ["sleep_stage", "datetime"]
+    orig_counts.append(len(epochs))
     # epochs.columns = ["datetime", "epoch_num", "sleep_stage", "n", "blank"]
     # epochs = epochs.drop(columns = ["n", "blank"])
 
@@ -187,6 +188,7 @@ for file_index in range(0,len(file_list)):
 # Save all data
 np.save(f"{output_directory}/eeg_voltage_data_no_scaling_all.npy", master_voltage_array)
 np.save(f"{output_directory}/eeg_epoch_data_no_scaling_all.npy", master_epoch_array)
+master_epoch_array_all = master_epoch_array # for group array creation
 
 # Delete "A": [1,1,1] labelled epochs and corresponding voltage data
 A_list = []
@@ -263,3 +265,27 @@ for sample_index in np.arange(input_eeg_array.shape[0]):
 # Save data input_array - these are the data that will be used for training and testing
 np.save(f"{output_directory}/eeg_input_array.npy", input_array)
 np.save(f"{output_directory}/epoch_input_array.npy", master_epoch_array)
+
+# create group array for subject wise k-fold cross-validation
+boundaries = np.cumsum([0] + orig_counts)
+
+removed_per_experiment = []
+for i in range(len(orig_counts)):
+    start = boundaries[i]
+    end = boundaries[i+1]
+    removed = A_list[(A_list >= start) & (A_list < end)]
+    removed_per_experiment.append(removed)
+
+final_counts = [
+    orig_counts[i] - len(removed_per_experiment[i])
+    for i in range(len(orig_counts))
+]
+
+groups = np.concatenate([
+    np.full(final_counts[i], i)
+    for i in range(len(final_counts))
+])
+
+np.save(f"{output_directory}/recording_id_array.npy", groups)
+assert len(groups) == len(master_epoch_array_all) - len(A_list)
+assert len(groups) == len(master_epoch_array)
