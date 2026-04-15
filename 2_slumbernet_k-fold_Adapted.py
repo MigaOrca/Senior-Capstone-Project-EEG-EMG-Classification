@@ -28,7 +28,8 @@ import os
 os.environ["TF_USE_LEGACY_KERAS"] = "1"
 import numpy as np
 import pandas as pd
-from sklearn.model_selection import StratifiedShuffleSplit
+from sklearn.model_selection import GroupKFold
+from sklearn.utils.class_weight import compute_class_weight
 from sklearn.metrics import precision_recall_fscore_support, accuracy_score, confusion_matrix, classification_report
 from sklearn.metrics import cohen_kappa_score, explained_variance_score, log_loss
 import tensorflow as tf
@@ -42,8 +43,8 @@ import csv
 input_directory = '/storage1/fs1/yaochen/Active/Emily-Senior-Capstone/EEG_Data_Preprocessed/'
 
 # Set the random seed for reproducible results
-seed = 154727
-np.random.seed(seed)
+# seed = 154727
+# np.random.seed(seed)
 
 # Use multiple GPUs if available - this will use all available GPUs
 strategy = tf.distribute.MirroredStrategy()
@@ -75,12 +76,12 @@ optimizer = keras.mixed_precision.LossScaleOptimizer(optimizer_name)
 input_shape = (400,2,1)     # *changed from (256,2,1) 2/21/26 EK
 nb_classes = 3              # Number of classes (W, N, R)   
 
-n_resnet_blocks = 7
-n_feature_maps = 8 
-kernel_expansion_fct = 1
+n_resnet_blocks = 7 # maybe addd more blocks?
+n_feature_maps = 8   # increase to 32 or 64?
+kernel_expansion_fct = 1 # increase to 2?
 kernel_y = 2
 strides = (1,1)
-dropout_rate = 0
+dropout_rate = 0  # increase to (0.2, 0.5)
 dropout_str = str(dropout_rate)     # Convert dropout rate to string for metadata
 
 # Data augmentation?
@@ -143,6 +144,33 @@ def resnet_blocks(input_tensor, n_feature_maps, kernel_y, kernel_expansion_fct, 
 
     return output_tensor
 
+def focal_loss(gamma=2.0, alpha=None):
+    """
+    Multi-class focal loss for one-hot encoded labels.
+    alpha: list or array of per-class weights, or None
+    gamma: focusing parameter
+    """
+    def loss(y_true, y_pred):
+        # Clip to avoid log(0)
+        y_pred = tf.clip_by_value(y_pred, 1e-7, 1 - 1e-7)
+
+        # Cross-entropy
+        ce = -y_true * tf.math.log(y_pred)
+
+        # If alpha provided, apply per-class weighting
+        if alpha is not None:
+            alpha_factor = y_true * alpha
+            ce = alpha_factor * ce
+
+        # Focal modulation
+        focal_factor = tf.pow(1 - y_pred, gamma)
+        loss = focal_factor * ce
+
+        # Sum over classes
+        return tf.reduce_sum(loss, axis=1)
+
+    return loss
+
 # Save parameters (num_folds, num_epochs, batch_size_per_gpu, n_feature_maps, kernel_expansion_fct) to csv
 parameters = {'Number of folds for k-fold cross-validation': num_folds, 'Number of Resnet blocks': n_resnet_blocks, 'Optimizer': optimizer_name.__class__.__name__, 
                 'Number of epochs': num_epochs, 'Batch size per GPU': batch_size_per_gpu, 'Learning rate (initial)': learning_rate, 
@@ -162,6 +190,19 @@ y = np.load(input_directory + "epoch_input_array.npy")
 # Reshape array for Conv2D shape(400,2) 
 X = X.reshape(-1,400,2) # *changed from (-1,256,2) 2/21/26
 X = X.astype('float32')         # Make float32 for tensorflow data augmentation calculations (default is float32)
+
+# Convert one-hot labels in y to integer labels
+y_int = np.argmax(y, axis=1)
+# Compute class weights
+class_weights_array = compute_class_weight(
+    class_weight='balanced',
+    classes=np.unique(y_int),
+    y=y_int
+)
+alpha = tf.constant(class_weights_array, dtype=tf.float16)
+
+# Convert to dict for Keras
+class_weights = {i: w for i, w in enumerate(class_weights_array)}
 
 # Data generator class with augmentation if specified
 class AugmentDataGenerator():
@@ -193,17 +234,21 @@ class AugmentDataGenerator():
         return dataset
 
 # Define the k-fold cross validation - maintains proportions of classes in each fold
-sss = StratifiedShuffleSplit(n_splits=num_folds, test_size=0.2, random_state=seed)
+#sss = StratifiedShuffleSplit(n_splits=num_folds, test_size=0.2, random_state=seed)
+groups = np.load(input_directory + "recording_id_array.npy")
+gkf = GroupKFold(n_splits=5)
 
 # Print the number of samples in each fold
-for train_index, test_index in sss.split(X,y):
+# for train_index, test_index in sss.split(X,y):
+for train_index, test_index in gkf.split(X,y, groups):
     print(f'Train set: {train_index.shape[0]}, Test set: {test_index.shape[0]},\
         Train:test = {train_index.shape[0]*100/(train_index.shape[0]+test_index.shape[0])}:\
                     {test_index.shape[0]*100/(train_index.shape[0]+test_index.shape[0])}')
 
 # Train the model in k-folds
 fold_num = 1
-for train_index, test_index in sss.split(X,y):
+# for train_index, test_index in sss.split(X,y):
+for train_index, test_index in gkf.split(X,y, groups):
 
     # Build model for multiple GPUs
     with strategy.scope():
@@ -221,7 +266,7 @@ for train_index, test_index in sss.split(X,y):
 
     # Compile the model on the strategy scope (multi-GPU)
     with strategy.scope():
-        model.compile(loss='categorical_crossentropy', 
+        model.compile(loss=focal_loss(gamma=2.0, alpha=alpha), 
                     optimizer=optimizer,
                     metrics=['accuracy'])
 
@@ -248,7 +293,8 @@ for train_index, test_index in sss.split(X,y):
         history = model.fit(train_dataset,
                             validation_data=test_dataset,
                             callbacks=callbacks_list,
-                            epochs=num_epochs)                        
+                            epochs=num_epochs,
+                            class_weight=class_weights)                        
 
     # Save last model
     model.save(output_directory + "fold_" + str(fold_num) + "_model_last.tf")
