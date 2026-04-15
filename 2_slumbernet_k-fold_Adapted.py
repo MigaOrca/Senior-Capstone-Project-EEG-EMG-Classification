@@ -77,11 +77,11 @@ input_shape = (400,2,1)     # *changed from (256,2,1) 2/21/26 EK
 nb_classes = 3              # Number of classes (W, N, R)   
 
 n_resnet_blocks = 7 # maybe add more blocks?
-n_feature_maps = 8   # increase to 32 or 64?
-kernel_expansion_fct = 1 # increase to 2?
+n_feature_maps = 32   # increase to 32 or 64?
+kernel_expansion_fct = 2 # increase to 2?
 kernel_y = 2
 strides = (1,1)
-dropout_rate = 0  # increase to (0.2, 0.5)
+dropout_rate = 0.2  # increase to (0.2, 0.5)
 dropout_str = str(dropout_rate)     # Convert dropout rate to string for metadata
 
 # Data augmentation?
@@ -97,7 +97,7 @@ if not os.path.exists(output_directory):
     os.makedirs(output_directory)
 
 # Function to create ResNet2D model
-def resnet_blocks(input_tensor, n_feature_maps, kernel_y, kernel_expansion_fct, strides, n_blocks, dropout_rate=0):
+def resnet_blocks(input_tensor, n_feature_maps, kernel_y, kernel_expansion_fct, strides, n_blocks, dropout_rate=0.2):
     output_tensor = input_tensor
 
     for i in range(n_blocks-1):
@@ -274,10 +274,16 @@ for train_index, test_index in gkf.split(X,y, groups):
     X_train, X_test = X[train_index], X[test_index]
     y_train, y_test = y[train_index], y[test_index]
 
+
     print(f'Fold {fold_num}, X_train: {X_train.shape}, y_train: {y_train.shape}, X_test: {X_test.shape}, y_test: {y_test.shape}')
 
     # Convert one-hot to integer labels
     y_train_int = np.argmax(y_train, axis=1)
+    print(y_train)
+    print(y_train_int)
+
+    unique, counts = np.unique(y_train_int, return_counts=True)
+    print("Before oversampling:", dict(zip(unique, counts)))
 
     # Get indices per class
     idx_class0 = np.where(y_train_int == 0)[0]
@@ -298,6 +304,10 @@ for train_index, test_index in gkf.split(X,y, groups):
     # Apply balancing
     X_train_bal = X_train[balanced_indices]
     y_train_bal = y_train[balanced_indices]
+
+    y_train_bal_int = np.argmax(y_train_bal, axis=1)
+    unique_bal, counts_bal = np.unique(y_train_bal_int, return_counts=True)
+    print("After oversampling:", dict(zip(unique_bal, counts_bal)))
 
     print(f'Fold {fold_num}, X_train: {X_train_bal.shape}, y_train: {y_train_bal.shape}, X_test: {X_test.shape}, y_test: {y_test.shape}')
 
