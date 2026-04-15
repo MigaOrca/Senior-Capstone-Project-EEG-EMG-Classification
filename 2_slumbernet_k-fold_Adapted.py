@@ -76,7 +76,7 @@ optimizer = keras.mixed_precision.LossScaleOptimizer(optimizer_name)
 input_shape = (400,2,1)     # *changed from (256,2,1) 2/21/26 EK
 nb_classes = 3              # Number of classes (W, N, R)   
 
-n_resnet_blocks = 7 # maybe addd more blocks?
+n_resnet_blocks = 7 # maybe add more blocks?
 n_feature_maps = 8   # increase to 32 or 64?
 kernel_expansion_fct = 1 # increase to 2?
 kernel_y = 2
@@ -97,7 +97,7 @@ if not os.path.exists(output_directory):
     os.makedirs(output_directory)
 
 # Function to create ResNet2D model
-def resnet_blocks(input_tensor, n_feature_maps, kernel_y, kernel_expansion_fct, strides, n_blocks, dropout_rate=0.0):
+def resnet_blocks(input_tensor, n_feature_maps, kernel_y, kernel_expansion_fct, strides, n_blocks, dropout_rate=0):
     output_tensor = input_tensor
 
     for i in range(n_blocks-1):
@@ -276,8 +276,33 @@ for train_index, test_index in gkf.split(X,y, groups):
 
     print(f'Fold {fold_num}, X_train: {X_train.shape}, y_train: {y_train.shape}, X_test: {X_test.shape}, y_test: {y_test.shape}')
 
+    # Convert one-hot to integer labels
+    y_train_int = np.argmax(y_train, axis=1)
+
+    # Get indices per class
+    idx_class0 = np.where(y_train_int == 0)[0]
+    idx_class1 = np.where(y_train_int == 1)[0]
+    idx_class2 = np.where(y_train_int == 2)[0]  # REM
+
+    # Oversample REM to match the largest class
+    max_count = max(len(idx_class0), len(idx_class1), len(idx_class2))
+
+    idx_class0_bal = np.random.choice(idx_class0, max_count, replace=True)
+    idx_class1_bal = np.random.choice(idx_class1, max_count, replace=True)
+    idx_class2_bal = np.random.choice(idx_class2, max_count, replace=True)
+
+    # Combine balanced indices
+    balanced_indices = np.concatenate([idx_class0_bal, idx_class1_bal, idx_class2_bal])
+    np.random.shuffle(balanced_indices)
+
+    # Apply balancing
+    X_train_bal = X_train[balanced_indices]
+    y_train_bal = y_train[balanced_indices]
+
+    print(f'Fold {fold_num}, X_train: {X_train_bal.shape}, y_train: {y_train_bal.shape}, X_test: {X_test.shape}, y_test: {y_test.shape}')
+
     # Wrap data in generators
-    train_generator = AugmentDataGenerator(X_train, y_train, batch_size, is_training=augment_data)
+    train_generator = AugmentDataGenerator(X_train_bal, y_train_bal, batch_size, is_training=augment_data)
     test_generator = AugmentDataGenerator(X_test, y_test, batch_size, is_training=False)    # Don't augment test data ever
     train_dataset = train_generator.create_dataset()
     test_dataset = test_generator.create_dataset()
