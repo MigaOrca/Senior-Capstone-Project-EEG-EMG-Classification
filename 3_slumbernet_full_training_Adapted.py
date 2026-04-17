@@ -24,15 +24,15 @@
 
 
 ### ---- Load libraries ---- ###
+import os
+os.environ["TF_USE_LEGACY_KERAS"] = "1"
 import numpy as np
 import pandas as pd
 from sklearn.utils import shuffle
 import tensorflow as tf
-import tensorflow.keras as keras
-from keras.callbacks import ModelCheckpoint
+import tf_keras as keras
+from tf_keras.callbacks import ModelCheckpoint
 import matplotlib.pyplot as plt
-import seaborn as sns
-import os
 
 # Input directory
 input_directory = '/storage1/fs1/yaochen/Active/Emily-Senior-Capstone/EEG_Data_Preprocessed/'
