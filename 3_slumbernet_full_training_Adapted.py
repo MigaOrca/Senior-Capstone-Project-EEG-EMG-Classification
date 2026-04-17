@@ -57,7 +57,7 @@ num_epochs = 50
 learning_rate = 1e-06
 batch_size_per_gpu = 128
 batch_size = batch_size_per_gpu * number_of_gpus_available
-optimizer_name = keras.optimizers.Adam(learning_rate)                # This is to pull out the correct name label for the optimizer
+optimizer_name = keras.optimizers.legacy.Adam(learning_rate)                # This is to pull out the correct name label for the optimizer
 optimizer = keras.mixed_precision.LossScaleOptimizer(optimizer_name)        # Wrapping the optimizer avoid crashes on multiple GPUs
 
 # Define ResNet2D model function and parameters

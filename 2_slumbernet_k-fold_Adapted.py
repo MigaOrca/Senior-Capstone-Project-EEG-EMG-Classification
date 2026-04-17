@@ -39,7 +39,7 @@ import seaborn as sns
 import csv
 
 # Input directory
-input_directory = '/storage1/fs1/yaochen/Active/Emily-Senior-Capstone/EEG_Data_Preprocessed/'
+input_directory = '/storage1/fs1/yaochen/Active/Emily-Senior-Capstone/EEG_Data_Preprocessed/' # change file path if needed
 
 # Set the random seed for reproducible results
 seed = 154727
