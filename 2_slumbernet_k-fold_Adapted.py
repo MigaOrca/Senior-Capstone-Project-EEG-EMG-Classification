@@ -96,22 +96,22 @@ if not os.path.exists(output_directory):
     os.makedirs(output_directory)
 
 # Function to create ResNet2D model
-def resnet_blocks(input_tensor, n_feature_maps, kernel_y, kernel_expansion_fct, strides, n_blocks, dropout_rate=0.0):
+def resnet_blocks(input_tensor, n_feature_maps, kernel_y, kernel_expansion_fct, strides, n_blocks, dropout_rate=0):
     output_tensor = input_tensor
 
     for i in range(n_blocks-1):
         # Repeating Resnet blocks
-        conv_x = keras.layers.Conv2D(filters=n_feature_maps * (2 ** i), kernel_size=(kernel_y,8*kernel_expansion_fct), strides=strides, padding='same')(output_tensor)
+        conv_x = keras.layers.Conv2D(filters=n_feature_maps * (2 ** i), kernel_size=(15, 1), strides=strides, padding='same')(output_tensor)
         conv_x = keras.layers.BatchNormalization()(conv_x)
         conv_x = keras.layers.Dropout(dropout_rate)(conv_x)
         conv_x = keras.layers.Activation('relu')(conv_x)
 
-        conv_y = keras.layers.Conv2D(filters=n_feature_maps * (2 ** i), kernel_size=(kernel_y,5*kernel_expansion_fct), strides=strides, padding='same')(conv_x)
+        conv_y = keras.layers.Conv2D(filters=n_feature_maps * (2 ** i), kernel_size=(11, 2), strides=strides, padding='same')(conv_x)
         conv_y = keras.layers.BatchNormalization()(conv_y)
         conv_y = keras.layers.Dropout(dropout_rate)(conv_y)
         conv_y = keras.layers.Activation('relu')(conv_y)
 
-        conv_z = keras.layers.Conv2D(filters=n_feature_maps * (2 ** i), kernel_size=(kernel_y,3*kernel_expansion_fct), strides=strides, padding='same')(conv_y)
+        conv_z = keras.layers.Conv2D(filters=n_feature_maps * (2 ** i), kernel_size=(7, 1), strides=strides, padding='same')(conv_y)
         conv_z = keras.layers.BatchNormalization()(conv_z)
 
         # Expand channels for the sum
@@ -123,15 +123,15 @@ def resnet_blocks(input_tensor, n_feature_maps, kernel_y, kernel_expansion_fct, 
         output_tensor = keras.layers.Activation('relu')(output_tensor)
     
     # Final block
-    conv_x = keras.layers.Conv2D(filters=n_feature_maps * (2 ** i), kernel_size=(kernel_y,8*kernel_expansion_fct), strides=strides, padding='same')(output_tensor)
+    conv_x = keras.layers.Conv2D(filters=n_feature_maps * (2 ** i), kernel_size=(15, 1), strides=strides, padding='same')(output_tensor)
     conv_x = keras.layers.BatchNormalization()(conv_x)
     conv_x = keras.layers.Activation('relu')(conv_x)
 
-    conv_y = keras.layers.Conv2D(filters=n_feature_maps * (2 ** i), kernel_size=(kernel_y,8*kernel_expansion_fct), strides=strides, padding='same')(conv_x)
+    conv_y = keras.layers.Conv2D(filters=n_feature_maps * (2 ** i), kernel_size=(11, 2), strides=strides, padding='same')(conv_x)
     conv_y = keras.layers.BatchNormalization()(conv_y)
     conv_y = keras.layers.Activation('relu')(conv_y)
 
-    conv_z = keras.layers.Conv2D(filters=n_feature_maps * (2 ** i), kernel_size=(kernel_y,8*kernel_expansion_fct), strides=strides, padding='same')(conv_y)
+    conv_z = keras.layers.Conv2D(filters=n_feature_maps * (2 ** i), kernel_size=(7, 1), strides=strides, padding='same')(conv_y)
     conv_z = keras.layers.BatchNormalization()(conv_z)
 
     # No need to expand channels because they are equal
@@ -158,6 +158,9 @@ accuracies, kappas, loss, explained_variances, confusion_matrices = [], [], [], 
 # Data and labels
 X = np.load(input_directory + "eeg_input_array.npy")
 y = np.load(input_directory + "epoch_input_array.npy")
+
+X = X[:99770]
+y = y[:99770]
 
 # Reshape array for Conv2D shape(400,2) 
 X = X.reshape(-1,400,2) # *changed from (-1,256,2) 2/21/26
