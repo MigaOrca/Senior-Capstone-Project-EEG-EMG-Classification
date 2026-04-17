@@ -1,7 +1,9 @@
-# This Python script converts *_EEGData.pkl into usable inputs for 1_slumbernet_preprocessing_Adapted
-# Extracts the first two columns of *_EEGData.pkl which are the Column 1: "EMG" and Column 2: "EEG (Frontal Channel)"
+# This Python script converts *_EEGData.pkl and *_SSData.pkl files into usable inputs for 1_slumbernet_preprocessing_Adapted
+# Requires all files to be used in dataset to be compiled into one folder. Change filepaths as needed.
+# It first extracts the first two columns of each *_EEGData.pkl in the given directory which are the Column 1: "EMG" and Column 2: "EEG (Frontal Channel)"
+# After all the *_EEGData.pkl are covnerted into .txt, all of the labels for Wake, NREM, and REM are converted to match SlumberNet's labelling 
+# # and are then converted into .txt files
 # Each EEG file pair takes ~1 min/GB
-# Requires all files to be used in dataset to be compiled into one folder
 
 ### ---- Load libraries ---- ###
 import pandas as pd
@@ -9,8 +11,8 @@ import os
 
 ### ---- Compliation of files to form dataset ---- ###
 # directories
-input_dir =  '/storage1/fs1/yaochen/Active/Emily-Senior-Capstone/Compilation_Data_Folder'
-output_dir = '/storage1/fs1/yaochen/Active/Emily-Senior-Capstone/EEG_Training_Data'
+input_dir =  '/storage1/fs1/yaochen/Active/Emily-Senior-Capstone/Compilation_Data_Folder' # change if needed
+output_dir = '/storage1/fs1/yaochen/Active/Emily-Senior-Capstone/EEG_Training_Data' # change if needed
 
 # makes new output directory if it doesn't exist
 if not os.path.exists(output_dir):
