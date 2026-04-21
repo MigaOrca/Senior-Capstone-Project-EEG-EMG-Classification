@@ -259,9 +259,6 @@ for train_index, test_index in sss.split(X,y):
 
     # Load the best model for predictions       
     model = keras.models.load_model(best_model_filepath, compile = False)
-    # Below lines are for debugging
-    print(tf.__version__)
-    print(model.optimizer.get_weights())
 
     # Make predictions on the test set (using multi-GPU)
     with strategy.scope():
@@ -309,7 +306,6 @@ for train_index, test_index in sss.split(X,y):
     for (label, metrics), specificity_per_fold in zip(results.items(), specificities_per_fold):
         metrics['specificity'] = specificity_per_fold.item() # convert to normal Python float type
     # Save dictionary (results) to csv
-    print(results)
     report = pd.DataFrame.from_dict(results, orient='index')
     report.to_csv(output_directory + 'fold_{}_metrics_per_sleep_state.csv'.format(fold_num))
 
@@ -362,7 +358,6 @@ metrics = {
     'Explained_Variance': explained_variances,
     'Specificity': specificities
 }
-print(specificities)
 
 metrics_results_df = pd.DataFrame(metrics)
 metrics_results_df.to_csv(output_directory + 'kfold_metrics.csv', index=False)

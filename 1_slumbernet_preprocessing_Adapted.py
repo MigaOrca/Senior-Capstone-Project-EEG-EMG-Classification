@@ -76,13 +76,6 @@ indexes_to_delete = []
 for file_number in range(0,len(file_list)):
     current_voltage_file_name = file_list.loc[file_number, "voltage_file"]
     voltage_file_name = f'{directory}/{current_voltage_file_name}'
-    # P.S. I have no idea what this is checking for, nor does it hold any meaning since data is already checked before processing in compile EK
-    # if voltages.loc[0].str.contains(",").any():      # This is to check that it is a voltage file; if not add to deletes
-    #     indexes_to_delete.append(file_number)
-    # else:    
-    #     voltages = pd.read_table(voltage_file_name, header=None, delimiter='\s+', skiprows=0, 
-    #                             low_memory=False)    # Needed if a column is a string and cannot convert easily
-    #     voltages.columns = ["emg_voltage", "eeg_voltage"]
     voltages = pd.read_table(voltage_file_name, header=0, skiprows=0)
     voltages.columns = ["emg_voltage", "eeg_voltage"]
     if voltages["eeg_voltage"].dtype != 'float64' or voltages["emg_voltage"].dtype != 'float64':
@@ -122,8 +115,6 @@ for file_index in range(0,len(file_list)):
         epochs = pd.read_table(epoch_file_name, header=0, delimiter='\t', skiprows=19)
     epochs.columns = ["sleep_stage", "datetime"]
     orig_counts.append(len(epochs))
-    # epochs.columns = ["datetime", "epoch_num", "sleep_stage", "n", "blank"]
-    # epochs = epochs.drop(columns = ["n", "blank"])
 
     # Extract voltage data for each epoch and matching sleep_stage:
     voltage_array = np.zeros((1,2,samples_per_epoch))    # Reset arrays for each file iteration
