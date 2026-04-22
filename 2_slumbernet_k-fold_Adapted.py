@@ -78,7 +78,7 @@ nb_classes = 3              # Number of classes (W, N, R)
 n_resnet_blocks = 7
 n_feature_maps = 16
 kernel_expansion_fct = 1
-kernel_y = [15, 11, 7]
+kernel_y = 1 # not used
 strides = (1,1)
 dropout_rate = 0
 dropout_str = str(dropout_rate)     # Convert dropout rate to string for metadata
@@ -100,22 +100,29 @@ def resnet_blocks(input_tensor, n_feature_maps, kernel_y, kernel_expansion_fct, 
     output_tensor = input_tensor
 
     for i in range(n_blocks-1):
+        # choose dilation based on block index
+        if i < 3:
+            dilation = (1,1)
+        elif i < 5:
+            dilation = (2,1)
+        else:
+            dilation = (4,1)
         # Repeating Resnet blocks
-        conv_x = keras.layers.Conv2D(filters=n_feature_maps * (2 ** i), kernel_size=(15, 1*kernel_expansion_fct), strides=strides, padding='same')(output_tensor)
+        conv_x = keras.layers.Conv2D(filters=n_feature_maps * (2 ** i), kernel_size=(15, 1*kernel_expansion_fct), strides=strides, dilation_rate=dilation, padding='same')(output_tensor)
         conv_x = keras.layers.BatchNormalization()(conv_x)
         conv_x = keras.layers.Dropout(dropout_rate)(conv_x)
         conv_x = keras.layers.Activation('relu')(conv_x)
 
-        conv_y = keras.layers.Conv2D(filters=n_feature_maps * (2 ** i), kernel_size=(11, 2*kernel_expansion_fct), strides=strides, padding='same')(conv_x)
+        conv_y = keras.layers.Conv2D(filters=n_feature_maps * (2 ** i), kernel_size=(11, 2*kernel_expansion_fct), strides=strides, dilation_rate=dilation, padding='same')(conv_x)
         conv_y = keras.layers.BatchNormalization()(conv_y)
         conv_y = keras.layers.Dropout(dropout_rate)(conv_y)
         conv_y = keras.layers.Activation('relu')(conv_y)
 
-        conv_z = keras.layers.Conv2D(filters=n_feature_maps * (2 ** i), kernel_size=(7, 1*kernel_expansion_fct), strides=strides, padding='same')(conv_y)
+        conv_z = keras.layers.Conv2D(filters=n_feature_maps * (2 ** i), kernel_size=(7, 1*kernel_expansion_fct), strides=strides, dilation_rate=dilation, padding='same')(conv_y)
         conv_z = keras.layers.BatchNormalization()(conv_z)
 
         # Expand channels for the sum
-        shortcut_y = keras.layers.Conv2D(filters=n_feature_maps * (2 ** i), kernel_size=(7, 1), padding='same')(output_tensor)
+        shortcut_y = keras.layers.Conv2D(filters=n_feature_maps * (2 ** i), kernel_size=(7, 1*kernel_expansion_fct), padding='same')(output_tensor)
         shortcut_y = keras.layers.BatchNormalization()(shortcut_y)
 
         output_tensor = keras.layers.add([shortcut_y, conv_z])
@@ -123,15 +130,15 @@ def resnet_blocks(input_tensor, n_feature_maps, kernel_y, kernel_expansion_fct, 
         output_tensor = keras.layers.Activation('relu')(output_tensor)
     
     # Final block
-    conv_x = keras.layers.Conv2D(filters=n_feature_maps * (2 ** i), kernel_size=(15, 1*kernel_expansion_fct), strides=strides, padding='same')(output_tensor)
+    conv_x = keras.layers.Conv2D(filters=n_feature_maps * (2 ** i), kernel_size=(15, 1*kernel_expansion_fct), strides=strides, dilation_rate=dilation, padding='same')(output_tensor)
     conv_x = keras.layers.BatchNormalization()(conv_x)
     conv_x = keras.layers.Activation('relu')(conv_x)
 
-    conv_y = keras.layers.Conv2D(filters=n_feature_maps * (2 ** i), kernel_size=(11, 2* kernel_expansion_fct), strides=strides, padding='same')(conv_x)
+    conv_y = keras.layers.Conv2D(filters=n_feature_maps * (2 ** i), kernel_size=(11, 2* kernel_expansion_fct), strides=strides, dilation_rate=dilation, padding='same')(conv_x)
     conv_y = keras.layers.BatchNormalization()(conv_y)
     conv_y = keras.layers.Activation('relu')(conv_y)
 
-    conv_z = keras.layers.Conv2D(filters=n_feature_maps * (2 ** i), kernel_size=(7, 1*kernel_expansion_fct), strides=strides, padding='same')(conv_y)
+    conv_z = keras.layers.Conv2D(filters=n_feature_maps * (2 ** i), kernel_size=(7, 1*kernel_expansion_fct), strides=strides, dilation_rate=dilation, padding='same')(conv_y)
     conv_z = keras.layers.BatchNormalization()(conv_z)
 
     # No need to expand channels because they are equal
